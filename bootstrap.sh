@@ -47,14 +47,14 @@ rm -rf /tmp/h/plugins/corvus-sfrm
 rm -rf /tmp/h/plugins/corvus-as2plus-admin
 find . -name *.xml -exec sed -i 's/@h2\.home@/\/home\/ubuntu\/hermes_home/g' {} \;
 find . -name *.xml -exec sed -i 's/@as2PageletAdaptor@/hk\.hku\.cecid\.edi\.as2\.admin\.listener\.MessageHistoryPageletAdaptor/g' {} \;
-find . -name *.xml -exec sed -i 's/@as2DriverClass@/com\.mysql\.jdbc\.Driver/g' {} \;
+find . -name *.xml -exec sed -i 's/@as2DriverClass@/com\.mysql\.cj\.jdbc\.Driver/g' {} \;
 find . -name *.xml -exec sed -i 's/@as2ConnStr@/jdbc:mysql:\/\/127\.0\.0\.1\/as2/g' {} \;
 find . -name *.xml -exec sed -i 's/@as2user@/corvus/g' {} \;
 find . -name *.xml -exec sed -i 's/@as2pw@/corvus/g' {} \;
 find . -name *.xml -exec sed -i 's/@as2ValidationQuery@/SELECT now\(\)/g' {} \;
 find . -name *.xml -exec sed -i 's/@as2DAOFile@/hk\/hku\/cecid\/edi\/as2\/conf\/as2.dao.xml/g' {} \;
 find . -name *.xml -exec sed -i 's/@ebmsPageletAdaptor@/hk\.hku\.cecid\.ebms\.admin\.listener\.MessageHistoryPageletAdaptor/g' {} \;
-find . -name *.xml -exec sed -i 's/@ebmsDriverClass@/com\.mysql\.jdbc\.Driver/g' {} \;
+find . -name *.xml -exec sed -i 's/@ebmsDriverClass@/com\.mysql\.cj\.jdbc\.Driver/g' {} \;
 find . -name *.xml -exec sed -i 's/@ebmsConnStr@/jdbc:mysql:\/\/127\.0\.0\.1\/ebms/g' {} \;
 find . -name *.xml -exec sed -i 's/@ebmsuser@/corvus/g' {} \;
 find . -name *.xml -exec sed -i 's/@ebmspw@/corvus/g' {} \;

@@ -1,80 +1,68 @@
 package hk.hku.cecid.piazza.commons.xpath;
+
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+import javax.xml.XMLConstants;
+import javax.xml.namespace.NamespaceContext;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.TransformerException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathEvaluationResult;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 
-import com.sun.org.apache.xml.internal.utils.PrefixResolverDefault;
-import com.sun.org.apache.xpath.internal.XPath;
-import com.sun.org.apache.xpath.internal.XPathContext;
-import com.sun.org.apache.xpath.internal.XPathVisitor;
-import com.sun.org.apache.xpath.internal.objects.XObject;
+import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 /**
- * XPathExecutor is an executor which evaluates a given xpath and yields the 
- * result.
- * <p>
- * <i>Example:</i>
- * </p>
- * <pre>
- *      XPathExecutor exec = new XPathExecutor(getDocument("doc.xml"));
- * 
- *      exec.registerFunction("http://example.com", "sum", new MySum());
- * 
- *      System.out.println(exec.eval( "3 + number('3') + eg:sum(3, 4, '5.1') + /values/one  - 2"));
- * 
- *      // The result will be '17.1'
- * </pre>
- * 
+ * XPathExecutor evaluates XPath expressions using the supported JAXP API.
+ *
  * @author Hugo Y. K. Lam
- *  
  */
 public class XPathExecutor {
-    
-    private Node contextNode;
-    private Node namespaceNode;
-    private XPathFunctionsProvider functionsProvider;
-    
-    private XPathContext xpathSupport;
-    private PrefixResolverDefault prefixResolver;
-    
+
+    private final Node contextNode;
+    private final XPathFunctionsProvider functionsProvider;
+    private final NamespaceContext namespaceContext;
+
     /**
      * Creates a new instance of XPathExecutor.
      */
     public XPathExecutor() {
         this(null);
     }
-    
+
     /**
      * Creates a new instance of XPathExecutor.
-     * 
-     * @param document the document containing the context being queried and 
+     *
+     * @param document the document containing the context being queried and
      *                 the namespaces being referenced.
      */
     public XPathExecutor(Node document) {
         this(document, null);
     }
-    
+
     /**
      * Creates a new instance of XPathExecutor.
-     * 
+     *
      * @param context the document containing the context being queried.
      * @param namespaces the document containing the namespaces being referenced.
      */
     public XPathExecutor(Node context, Node namespaces) {
-        this.contextNode = context==null? createDocument() : context;
-        this.namespaceNode = namespaces==null? contextNode : namespaces;
+        this.contextNode = context == null ? createDocument() : context;
+        Node namespaceNode = namespaces == null ? contextNode : namespaces;
         this.functionsProvider = new XPathFunctionsProvider();
-        this.xpathSupport = new XPathContext(functionsProvider);
-        this.prefixResolver = new PrefixResolverDefault(
-                (namespaceNode.getNodeType() == Node.DOCUMENT_NODE) ? 
-                        ((org.w3c.dom.Document) namespaceNode)
-                        .getDocumentElement() : namespaceNode);
+        this.namespaceContext = new NodeNamespaceContext(namespaceNode);
     }
 
     /**
      * Registers a function to be used in an XPath.
-     * 
+     *
      * @param ns the namespace of the function.
      * @param funcName the function name.
      * @param func the function implementation.
@@ -85,7 +73,7 @@ public class XPathExecutor {
 
     /**
      * Evaluates an XPath expression.
-     * 
+     *
      * @param expression the XPath expression.
      * @return the evaluated result.
      * @throws TransformerException if unable to transform the expression.
@@ -96,68 +84,97 @@ public class XPathExecutor {
 
     /**
      * Evaluates an XPath expression.
-     * 
+     *
      * @param expression the XPath expression.
      * @param context the document containing the context being queried.
      * @return the evaluated result.
      * @throws TransformerException if unable to transform the expression.
      */
     public Object eval(String expression, Node context) throws TransformerException {
-        if (context == null) {
-            context = contextNode;
+        Node evaluationContext = context == null ? contextNode : context;
+        try {
+            XPathEvaluationResult<?> result = createXPath().evaluateExpression(expression, evaluationContext);
+            return result.value();
         }
-
-        XPath xpath = createXPath(expression);
-
-        XObject result = xpath.execute(xpathSupport, 
-                             xpathSupport.getDTMHandleFromNode(context), 
-                             prefixResolver);
-        
-        if (result.getType() == XObject.CLASS_BOOLEAN) {
-            return new Boolean(result.toString());
-        }
-        else {
-            return result.object();
+        catch (XPathExpressionException e) {
+            throw new TransformerException("Cannot evaluate XPath expression", e);
         }
     }
 
-    /**
-     * Evaluates an XPath expression.
-     * 
-     * @param expression the XPath expression.
-     * @param visitor the XPath visitor.
-     * @throws TransformerException if unable to transform the expression.
-     */
-    public void visit(String expression, XPathVisitor visitor) throws TransformerException {
-        XPath xpath = createXPath(expression);
-
-        xpath.callVisitors(xpath, visitor);
+    private XPath createXPath() {
+        XPath xpath = XPathFactory.newInstance().newXPath();
+        xpath.setNamespaceContext(namespaceContext);
+        xpath.setXPathFunctionResolver(functionsProvider);
+        return xpath;
     }
 
-    /**
-     * Creates an XPath object for an XPath expression.
-     * 
-     * @param expression the XPath expression.
-     * @return the XPath object.
-     * @throws TransformerException if unable to transform the expression.
-     */
-    private XPath createXPath(String expression) throws TransformerException {
-        return new XPath(expression, null, prefixResolver, XPath.SELECT, null);
-    }
-    
-    /**
-     * Creates a blank document.
-     * 
-     * @return a blank document.
-     */
     private static Node createDocument() {
         try {
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            DocumentBuilder db = dbf.newDocumentBuilder();
-            return db.newDocument();
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            return builder.newDocument();
         }
         catch (Exception e) {
-            throw new RuntimeException("Cannot construct or configure document builder", e);
+            throw new IllegalStateException("Cannot construct or configure document builder", e);
+        }
+    }
+
+    private static final class NodeNamespaceContext implements NamespaceContext {
+        private final Node namespaceNode;
+
+        private NodeNamespaceContext(Node namespaceNode) {
+            this.namespaceNode = namespaceNode;
+        }
+
+        @Override
+        public String getNamespaceURI(String prefix) {
+            if (prefix == null) {
+                throw new IllegalArgumentException("Prefix must not be null");
+            }
+            if (XMLConstants.XML_NS_PREFIX.equals(prefix)) {
+                return XMLConstants.XML_NS_URI;
+            }
+            if (XMLConstants.XMLNS_ATTRIBUTE.equals(prefix)) {
+                return XMLConstants.XMLNS_ATTRIBUTE_NS_URI;
+            }
+            String namespace = namespaceNode.lookupNamespaceURI(prefix.isEmpty() ? null : prefix);
+            return namespace == null ? XMLConstants.NULL_NS_URI : namespace;
+        }
+
+        @Override
+        public String getPrefix(String namespaceURI) {
+            Iterator<String> prefixes = getPrefixes(namespaceURI);
+            return prefixes.hasNext() ? prefixes.next() : null;
+        }
+
+        @Override
+        public Iterator<String> getPrefixes(String namespaceURI) {
+            if (namespaceURI == null) {
+                throw new IllegalArgumentException("Namespace URI must not be null");
+            }
+            Set<String> prefixes = new LinkedHashSet<String>();
+            Node node = namespaceNode.getNodeType() == Node.DOCUMENT_NODE
+                    ? ((Document) namespaceNode).getDocumentElement() : namespaceNode;
+            for (; node != null; node = node.getParentNode()) {
+                NamedNodeMap attributes = node.getAttributes();
+                if (attributes == null) {
+                    continue;
+                }
+                for (int i = 0; i < attributes.getLength(); i++) {
+                    Node attribute = attributes.item(i);
+                    if (!namespaceURI.equals(attribute.getNodeValue())) {
+                        continue;
+                    }
+                    String name = attribute.getNodeName();
+                    if (XMLConstants.XMLNS_ATTRIBUTE.equals(name)) {
+                        prefixes.add(XMLConstants.DEFAULT_NS_PREFIX);
+                    }
+                    else if (name.startsWith(XMLConstants.XMLNS_ATTRIBUTE + ":")) {
+                        prefixes.add(name.substring(XMLConstants.XMLNS_ATTRIBUTE.length() + 1));
+                    }
+                }
+            }
+            return prefixes.isEmpty() ? Collections.<String>emptySet().iterator() : prefixes.iterator();
         }
     }
 }

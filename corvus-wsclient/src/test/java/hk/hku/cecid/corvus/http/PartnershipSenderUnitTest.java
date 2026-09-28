@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.util.Iterator;
+import java.util.Base64;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -27,8 +28,6 @@ import org.apache.commons.fileupload.FileUpload;
 import org.apache.commons.fileupload.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import sun.misc.BASE64Decoder;
 
 import hk.hku.cecid.piazza.commons.io.IOHandler;
 import hk.hku.cecid.corvus.util.FileLogger;
@@ -219,7 +218,7 @@ public class PartnershipSenderUnitTest extends TestCase
 		assertTrue	(authToken.length == 2);	
 		assertTrue	("Missing basic auth prefix 'Basic'", authToken[0].equalsIgnoreCase("Basic"));		
 		// #1 Decode the base64 authentication value to see whether it is "corvus:corvus".
-		String decodedCredential = new String(new BASE64Decoder().decodeBuffer(authToken[1]), "UTF-8");
+		String decodedCredential = new String(Base64.getDecoder().decode(authToken[1]), "UTF-8");
 		assertEquals("Invalid basic auth content", USER_NAME + ":" + PASSWORD, decodedCredential);
 		
 		// #2 Check content Type

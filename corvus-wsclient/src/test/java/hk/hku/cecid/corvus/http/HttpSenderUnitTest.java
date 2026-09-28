@@ -15,10 +15,9 @@ import java.net.URL;
 import java.net.MalformedURLException;
 import java.util.Map;
 import java.util.Iterator;
+import java.util.Base64;
 
 import junit.framework.TestCase;
-
-import sun.misc.BASE64Encoder;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -171,7 +170,7 @@ public class HttpSenderUnitTest extends TestCase
 		this.assertSend();
 		
 		String auth = (String) this.monitor.getHeaders().get("Authorization");
-		String base64auth = "Basic " + new BASE64Encoder().encode((user + ":" + password).getBytes());
+		String base64auth = "Basic " + Base64.getEncoder().encodeToString((user + ":" + password).getBytes());
 		assertNotNull("Missing the Basic Authorization.", auth);	
 		assertEquals ("The Basic Authorization mis-match.", base64auth, auth);
 	}
@@ -183,6 +182,7 @@ public class HttpSenderUnitTest extends TestCase
 			Thread.sleep(1500); // Make some delay for releasing the socket.
 		}
 		logger.info(this.getName() + " End ");
+		this.testClassLogger.close();
 	}
 	
 	/*

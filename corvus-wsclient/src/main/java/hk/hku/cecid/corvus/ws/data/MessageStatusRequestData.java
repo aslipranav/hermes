@@ -10,6 +10,7 @@
 package hk.hku.cecid.corvus.ws.data;
 
 import java.util.Calendar;
+import java.util.Base64;
 import java.math.BigInteger;
 
 import hk.hku.cecid.corvus.util.DateUtil;
@@ -128,11 +129,9 @@ public class MessageStatusRequestData extends KVPairData {
 	 */
 	public String getPassword(){
 		try{
-			return new String(
-				new sun.misc.BASE64Decoder()
-					.decodeBuffer((String) props.get(CONFIG_KEY_SET[2])));
-		}catch(java.io.IOException ioe){
-			ioe.printStackTrace(System.err);
+			return new String(Base64.getDecoder().decode((String) props.get(CONFIG_KEY_SET[2])));
+		}catch(IllegalArgumentException iae){
+			iae.printStackTrace(System.err);
 		}
 		return null;
 	}
@@ -142,7 +141,7 @@ public class MessageStatusRequestData extends KVPairData {
 	 */
 	public void setPassword(String password){
 		if (password != null){
-			String b64encode = new sun.misc.BASE64Encoder().encode(password.getBytes());
+			String b64encode = Base64.getEncoder().encodeToString(password.getBytes());
 			props.put(CONFIG_KEY_SET[2], b64encode);
 		}
 	}

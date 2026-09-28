@@ -68,7 +68,6 @@ public class SFRMMessageTest extends TestCase {
 				System.out.println(", MD5: " + md5);
 //				Thread.sleep(200);
 //				System.gc();
-//				System.runFinalization();
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

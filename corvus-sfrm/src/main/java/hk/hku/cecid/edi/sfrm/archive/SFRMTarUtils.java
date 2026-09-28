@@ -1,84 +1,38 @@
 package hk.hku.cecid.edi.sfrm.archive;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
-import org.apache.tools.tar.TarUtils;
+public final class SFRMTarUtils {
 
-/**
- * @author Patrick Yip
- *
- */
-public class SFRMTarUtils extends TarUtils {
-	
-	public final static String NAME_ENCODING = "UTF-8";
-	/**
-     * Parse an entry name from a header buffer.
-     *
-     * @param header The header buffer from which to parse.
-     * @param offset The offset into the buffer from which to parse.
-     * @param length The number of header bytes to parse.
-     * @return The header's entry name.
+    public static final String NAME_ENCODING = "UTF-8";
+
+    /**
+     * Retains the public legacy constructor for source and binary callers.
      */
+    public SFRMTarUtils() {
+    }
+
     public static StringBuffer parseName(byte[] header, int offset, int length) {
+        int nameLength = length;
+        int end = offset + length;
 
-		StringBuffer result = null;
-        int nameLen = length; 
-		
-        int          end = offset + length;
-
-        for (int i = offset; i < end; ++i) {
+        for (int i = offset; i < end; i++) {
             if (header[i] == 0) {
-				nameLen = i - offset; 
+                nameLength = i - offset;
                 break;
             }
-
-//            result.append((char) header[i]);
-			
         }
-		
-		try {
-            result = new StringBuffer(new String(header, offset, nameLen, NAME_ENCODING));
-        } catch(UnsupportedEncodingException e) {
-           e.printStackTrace();
-        } 
 
-        return result;
+        return new StringBuffer(new String(header, offset, nameLength, StandardCharsets.UTF_8));
     }
-    
-    /**
-     * Determine the number of bytes in an entry name.
-     *
-     * @param name The header name from which to parse.
-     * @param buf The buffer from which to parse.
-     * @param offset The offset into the buffer from which to parse.
-     * @param length The number of header bytes to parse.
-     * @return The number of bytes in a header's entry name.
-     */
-    public static int getNameBytes(StringBuffer name, byte[] buf, int offset, int length) {
-//        int i;
-		int nameLength = -1;
-        try
-        {
-            byte nameBytes[] = name.toString().getBytes(NAME_ENCODING);
-            nameLength = nameBytes.length ;
-            System.arraycopy(nameBytes, 0, buf, offset, nameLength);
-        } catch(UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } 
-		/*
-        for (i = 0; i < length && i < name.length(); ++i) {
-            buf[offset + i] = (byte) name.charAt(i);
-        }
 
-        for (; i < length; ++i) {
-            buf[offset + i] = 0;
+    public static int getNameBytes(StringBuffer name, byte[] buffer, int offset, int length) {
+        byte[] nameBytes = name.toString().getBytes(StandardCharsets.UTF_8);
+        int nameLength = Math.min(nameBytes.length, length);
+        System.arraycopy(nameBytes, 0, buffer, offset, nameLength);
+        for (; nameLength < length; nameLength++) {
+            buffer[offset + nameLength] = 0;
         }
-		*/
-		
-		for (; nameLength < length; ++nameLength) {
-            buf[offset + nameLength] = 0;
-        } 
-		
         return offset + length;
     }
 }

@@ -36,11 +36,6 @@ import hk.hku.cecid.piazza.commons.security.TrustedHostnameVerifier;
  * @since	1.0.3
  */
 public class OutgoingMessageHandler extends SFRMComponent{	
-	static{
-		System.setProperty("sun.net.client.defaultConnectTimeout", "60000");
-		System.setProperty("sun.net.client.defaultReadTimeout"	 , "60000");
-	}
-		
 	private static OutgoingMessageHandler omh;
 	
 	/**

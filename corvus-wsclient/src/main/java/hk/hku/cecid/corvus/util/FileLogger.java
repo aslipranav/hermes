@@ -14,6 +14,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.lang.ref.Cleaner;
 
 import hk.hku.cecid.piazza.commons.module.Component;
 
@@ -53,11 +54,33 @@ import hk.hku.cecid.piazza.commons.util.UtilitiesException;
  * @version 1.0.1
  * @since	1.0.0  
  */
-public class FileLogger extends Component implements Logger {
+public class FileLogger extends Component implements Logger, AutoCloseable {
+
+	private static final Cleaner CLEANER = Cleaner.create();
 
 	private File logFile;
 	private OutputStream outStream;
 	private PrintStream logStream;
+	private final Cleaner.Cleanable cleanable;
+
+	private static final class StreamCleanup implements Runnable {
+		private final OutputStream outStream;
+		private final PrintStream logStream;
+
+		private StreamCleanup(OutputStream outStream, PrintStream logStream) {
+			this.outStream = outStream;
+			this.logStream = logStream;
+		}
+
+		public void run() {
+			logStream.close();
+			try {
+				outStream.close();
+			} catch (IOException e) {
+				System.err.println("Failed to close the stream.");
+			}
+		}
+	}
 
 	/*
 	 * The default log file name for logging when
@@ -116,6 +139,7 @@ public class FileLogger extends Component implements Logger {
 			
 			outStream = new FileOutputStream(logFile);
 			logStream = new PrintStream(outStream, true);
+			cleanable = CLEANER.register(this, new StreamCleanup(outStream, logStream));
 		} catch (IOException ioe) { 
 			throw new UtilitiesException("Could not open the log file \""
 										+ logFile.getName() 
@@ -298,19 +322,22 @@ public class FileLogger extends Component implements Logger {
 	}
 
 	/**
-	 * The method finalized the class.
+	 * Closes the log streams. Call this when the logger is no longer needed.
 	 */
-	protected void 
-	finalize() 
-	{
-		if (logStream != null)
-			logStream.close();
-		try {
-			outStream.close();
-		} catch (IOException e) {
-			System.err.println("Failed to close the stream.");
-		}
-	}		
+	public void close() {
+		cleanable.clean();
+		logStream = null;
+		outStream = null;
+	}
+
+	/**
+	 * Retains the protected legacy cleanup hook; callers should use close().
+	 */
+	@Override
+	@SuppressWarnings("removal")
+	protected void finalize() {
+		cleanable.clean();
+	}
 	
 	/**
 	 * toString method().

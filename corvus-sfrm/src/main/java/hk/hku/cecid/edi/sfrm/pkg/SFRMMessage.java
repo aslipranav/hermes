@@ -19,6 +19,7 @@ import java.security.cert.CertStore;
 import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Enumeration;
 import java.util.Iterator;
 
@@ -796,7 +797,7 @@ public class SFRMMessage implements Cloneable {
 	        while (dis.read(buf) != -1) {
 	        }
 	    
-	        return (new sun.misc.BASE64Encoder()).encode(dis.getMessageDigest().digest());
+	        return Base64.getEncoder().encodeToString(dis.getMessageDigest().digest());
 		} catch (Exception e) {
 			throw new SFRMMessageException("Unable to generate message digest", e);
 		}
@@ -806,7 +807,7 @@ public class SFRMMessage implements Cloneable {
 		try {
 			MessageDigest md = MessageDigest.getInstance("md5");
 			md.update(frds.getByteBuffer());
-			return (new sun.misc.BASE64Encoder()).encode(md.digest());
+			return Base64.getEncoder().encodeToString(md.digest());
 		} catch (Exception e) {
 			throw new SFRMMessageException("Unable to generate message digest", e);
 		}

@@ -95,10 +95,10 @@ input in the page to choose components to install
 		<copy todir="${basedir}/resources/lib" file="${DBdriverloc}"/>	
 	    <echo message="Installing DB Driver: ${DriverFN}"/>
 		<!-- Check if the jar file has the required drivers -->
-		<available classname="com.mysql.jdbc.Driver" classpath="${DBdriverloc}" property="MySQLDriverPresent"/>
+		<available classname="com.mysql.cj.jdbc.Driver" classpath="${DBdriverloc}" property="MySQLDriverPresent"/>
 		<fail message="${DBdriverloc} is not a valid MySQL Driver." unless="MySQLDriverPresent"/>
 		<!-- Set MySQL property for AS2 -->
-		<property name="as2DBMSDriverStr" value="com.mysql.jdbc.Driver"/>
+		<property name="as2DBMSDriverStr" value="com.mysql.cj.jdbc.Driver"/>
 		<property name="as2ConnStr" value="jdbc:mysql://${as2Host}/${as2Database}"/>
 		<property name="as2ValidationQuery" value="SELECT now()"/>
 		<property name="as2JDBCFile" value="${DriverFN}"/>
@@ -106,7 +106,7 @@ input in the page to choose components to install
 		<property name="as2PageletAdaptor" value="hk.hku.cecid.edi.as2.admin.listener.MessageHistoryPageletAdaptor"/>
 		<property name="as2.sql.file_prefix" value="mysql_"/>
 		<!-- Set MySQL property for AS2 Plus -->
-		<property name="as2PlusDBMSDriverStr" value="com.mysql.jdbc.Driver"/>
+		<property name="as2PlusDBMSDriverStr" value="com.mysql.cj.jdbc.Driver"/>
 		<property name="as2PlusConnStr" value="jdbc:mysql://${as2PlusHost}/${as2PlusDatabase}"/>
 		<property name="as2PlusValidationQuery" value="SELECT now()"/>
 		<property name="as2PlusJDBCFile" value="${DriverFN}"/>
@@ -115,7 +115,7 @@ input in the page to choose components to install
 		<property name="as2Plus.sql.file_prefix" value="mysql_"/>
 		
 		<!-- Set MySQL property for EbMS -->
-		<property name="ebmsDBMSDriverStr" value="com.mysql.jdbc.Driver"/>
+		<property name="ebmsDBMSDriverStr" value="com.mysql.cj.jdbc.Driver"/>
 		<property name="ebmsConnStr" value="jdbc:mysql://${ebmsHost}/${ebmsDatabase}"/>
 		<property name="ebmsValidationQuery" value="SELECT now()"/>
 		<property name="ebmsJDBCFile" value="${DriverFN}"/>

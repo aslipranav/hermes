@@ -20,8 +20,12 @@
                 <include>hk.hku.cecid:ebxml-pkg</include>
                 <include>hk.hku.cecid:corvus-ebms</include>
                 <include>hk.hku.cecid:corvus-ebms-admin</include>
+                <include>hk.hku.cecid:corvus-sfrm</include>
+                <include>hk.hku.cecid:corvus-sfrm-admin</include>
                 <include>hk.hku.cecid:corvus-wsclient</include>
                 <include>hk.hku.cecid:corvus-api</include>
+                <include>hk.hku.cecid:loopback</include>
+                <include>hk.hku.cecid:h2o-installer</include>
             </includes>
             <sources>
                 <fileSets>
@@ -42,9 +46,24 @@
           <outputDirectory>${file.separator}</outputDirectory>
         </file>
         <file>
-          <source>pom-public.xml</source>
+          <source>pom.xml</source>
           <outputDirectory>${file.separator}</outputDirectory>
-          <destName>pom.xml</destName>
-        </file> 
+        </file>
     </files>
+    <fileSets>
+        <fileSet>
+          <directory>${project.basedir}</directory>
+          <includes>
+            <include>README.md</include>
+            <include>LICENSE.txt</include>
+            <include>RELEASE-NOTES.txt</include>
+            <include>MODERNIZATION.md</include>
+            <include>Vagrantfile</include>
+            <include>bootstrap.sh</include>
+            <include>deploy/**</include>
+            <include>scripts/**</include>
+            <include>src.xml</include>
+          </includes>
+        </fileSet>
+    </fileSets>
 </assembly>

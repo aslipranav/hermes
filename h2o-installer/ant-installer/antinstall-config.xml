@@ -135,8 +135,8 @@ the installer script should put the locations of these resources on the classpat
 		</conditional>
 		<conditional ifProperty="${DBMS}=mysqlDriver">
 			<hidden property="dbName" value="MySQL"/>
-			<hidden property="defaultDriverPath" value="~/mysql-connector-java-5.1.40-bin.jar"/>
-			<hidden property="defaultDriverPathWin" value="${env.USERPROFILE}\Downloads\mysql-connector-java-5.1.40\mysql-connector-java-5.1.40-bin.jar"/>		
+			<hidden property="defaultDriverPath" value="~/mysql-connector-j-26.7.0.jar"/>
+			<hidden property="defaultDriverPathWin" value="${env.USERPROFILE}\Downloads\mysql-connector-j-26.7.0.jar"/>
 		</conditional>
 		<comment
 		displayText="Please specify the location of ${dbName} JDBC Driver."

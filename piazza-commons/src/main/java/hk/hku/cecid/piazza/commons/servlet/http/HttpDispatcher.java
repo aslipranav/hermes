@@ -78,7 +78,7 @@ public class HttpDispatcher extends HttpServlet {
         }
 
         try {
-            Class<?> clazz = Class.forName("com.mysql.jdbc.AbandonedConnectionCleanupThread");
+            Class<?> clazz = Class.forName("com.mysql.cj.jdbc.AbandonedConnectionCleanupThread");
             Method method = (clazz == null ? null : clazz.getMethod("shutdown"));
             if (method != null) {
                 method.invoke(null);

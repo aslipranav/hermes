@@ -1,11 +1,13 @@
 package hk.hku.cecid.edi.sfrm.archive;
 
 import java.io.File;
+import java.io.FileOutputStream;
 
 import hk.hku.cecid.piazza.commons.os.OSCommander;
 import hk.hku.cecid.piazza.commons.test.utils.FixtureStore;
 import junit.framework.Assert;
 import junit.framework.TestCase;
+import org.apache.tools.tar.TarEntry;
 
 /**
  * @author Patrick Yip
@@ -131,6 +133,52 @@ public class ArchiverTarTest extends TestCase {
 				tarFile.delete();
 			if(dummyFile.exists())
 				dummyFile.delete();
+		}
+	}
+
+	public void testCompressUnicodeFilename() throws Exception {
+		File source = new File(FIXTURE_LOADER.getResource("Src").getFile(), "測試.txt");
+		File archive = new File(FIXTURE_LOADER.getResource("Compressed").getFile(), "unicode.tar");
+		File extracted = new File(FIXTURE_LOADER.getResource("Extracted").getFile(), source.getName());
+
+		try {
+			FileOutputStream output = new FileOutputStream(source);
+			output.write("payload".getBytes("UTF-8"));
+			output.close();
+			new ArchiverTar().compress(source, archive, true);
+			source.delete();
+			new ArchiverTar().extract(archive, extracted.getParentFile());
+			Assert.assertTrue("Unicode TAR entry should round-trip", extracted.exists());
+		} finally {
+			archive.delete();
+			source.delete();
+			extracted.delete();
+		}
+	}
+
+	public void testExtractRejectsTraversalEntry() throws Exception {
+		File archive = new File(FIXTURE_LOADER.getResource("Compressed").getFile(), "traversal.tar");
+		File destination = new File(FIXTURE_LOADER.getResource("Extracted").getFile());
+		File escaped = new File(destination.getParentFile(), "escaped-by-tar");
+
+		try {
+			SFRMTarOutputStream output = new SFRMTarOutputStream(new FileOutputStream(archive));
+			TarEntry entry = new TarEntry("../escaped-by-tar");
+			entry.setSize(1);
+			output.putNextEntry(entry);
+			output.write('x');
+			output.closeEntry();
+			output.close();
+
+			try {
+				new ArchiverTar().extract(archive, destination);
+				Assert.fail("Traversal TAR entry should be rejected");
+			} catch (java.io.IOException expected) {
+				Assert.assertFalse("Traversal TAR entry must not be written", escaped.exists());
+			}
+		} finally {
+			archive.delete();
+			escaped.delete();
 		}
 	}
 	

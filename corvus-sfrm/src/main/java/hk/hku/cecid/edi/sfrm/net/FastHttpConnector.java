@@ -23,6 +23,7 @@ import javax.mail.internet.InternetHeaders;
  * @since	1.0.0
  */
 public class FastHttpConnector extends HttpConnector {
+	private static final int TIMEOUT_MILLIS = 60000;
 	
 	private int responseCode;
 	
@@ -158,6 +159,8 @@ public class FastHttpConnector extends HttpConnector {
 	 public HttpURLConnection send(InputStream request, InternetHeaders headers) throws ConnectionException {
 		 	
 		 	HttpURLConnection connection = createConnection();
+			connection.setConnectTimeout(TIMEOUT_MILLIS);
+			connection.setReadTimeout(TIMEOUT_MILLIS);
 			Headers iheaders 		= new Headers(connection);
 			iheaders.putInternetHeaders(headers);
 			

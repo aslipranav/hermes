@@ -92,7 +92,7 @@ public class ArchiverTar extends ArchiverNULL {
 	
 	public boolean compress(List<File> src, File dest, boolean includeItself) throws IOException{	
 		FileOutputStream fos  = new FileOutputStream(dest);
-		TarOutputStream	 outs = new TarOutputStream(fos);
+		TarOutputStream	 outs = new SFRMTarOutputStream(fos);
 		
 		WritableByteChannel tarChannel = Channels.newChannel(outs);	 		
 		outs.setLongFileMode(TarOutputStream.LONGFILE_GNU);
@@ -158,7 +158,7 @@ public class ArchiverTar extends ArchiverNULL {
 		super.compress(src, dest, includeItself);		
 		
 		FileOutputStream fos  = new FileOutputStream(dest);
-		TarOutputStream	 outs = new TarOutputStream(fos);
+		TarOutputStream	 outs = new SFRMTarOutputStream(fos);
 		
 		WritableByteChannel tarChannel = Channels.newChannel(outs);	 
 		Iterator allFiles = this.listFilesToArchive(src);		
@@ -207,7 +207,8 @@ public class ArchiverTar extends ArchiverNULL {
 		super.extract(archive, dest);
 		BufferedInputStream bis = new BufferedInputStream(
 			new FileInputStream(archive));
-		TarInputStream tis = new TarInputStream(bis);
+		TarInputStream tis = new SFRMTarInputStream(bis);
+		File destinationRoot = dest.getCanonicalFile();
 		
 		int count = 0;
 		for (;; count++) {
@@ -219,7 +220,10 @@ public class ArchiverTar extends ArchiverNULL {
 			
 			String name = entry.getName();
 			name = name.replace('/', File.separatorChar);
-			File destFile = new File(dest, name);
+			File destFile = new File(destinationRoot, name).getCanonicalFile();
+			if (!destFile.toPath().startsWith(destinationRoot.toPath())) {
+				throw new IOException("TAR entry escapes destination: " + entry.getName());
+			}
 			if (entry.isDirectory()) {
 				if (!destFile.exists()) {
 					if (!destFile.mkdirs()) {
@@ -339,7 +343,7 @@ public class ArchiverTar extends ArchiverNULL {
 	 * 			each entry in the archive. 
 	 */
 	public List listAsFile(File archive) throws IOException{
-		TarInputStream tarInStream = new TarInputStream(new FileInputStream(archive));
+		TarInputStream tarInStream = new SFRMTarInputStream(new FileInputStream(archive));
 		
 		TarEntry entry = null;
 		ArrayList list = new ArrayList();
@@ -363,7 +367,7 @@ public class ArchiverTar extends ArchiverNULL {
 	 * 			archive. 
 	 */
 	public List listAsFilename(File archive) throws IOException{
-		TarInputStream tarInStream = new TarInputStream(new FileInputStream(archive));
+		TarInputStream tarInStream = new SFRMTarInputStream(new FileInputStream(archive));
 		
 		TarEntry entry = null;
 		ArrayList list = new ArrayList();

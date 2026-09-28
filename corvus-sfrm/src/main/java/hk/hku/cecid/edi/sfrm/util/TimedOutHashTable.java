@@ -103,10 +103,6 @@ public class TimedOutHashTable extends Hashtable {
 			}			
 		}
 
-		/*protected void finalize() throws Throwable {
-			super.finalize();
-			System.out.println("TimedOut Task is destoryed.");
-		}*/				
 	}
 	
 	/** 
@@ -203,9 +199,4 @@ public class TimedOutHashTable extends Hashtable {
 		this.monitor = null;
 	}	
 	
-	// For DEBUG Purpose only.
-	/*protected void finalize() throws Throwable {
-		super.finalize();
-		System.out.println("TimedOutHashTable is destoryed.");
-	}			*/
 }

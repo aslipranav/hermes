@@ -8,6 +8,13 @@ documents for transmission. Hermes is reliable; the sender can automatically
 retransmit a message when it is dropped in the network while the receiver can
 guarantee every message is delivered once and only once, and in the right order.
 
+## Java 27 Rebuild
+This repository is the Hermes project rebuilt to compile and run on Java 27
+while preserving the existing Hermes AS2, ebMS, SFRM, installer, and database
+compatibility contracts. See [MODERNIZATION.md](MODERNIZATION.md) for the
+verified upgrade scope, compatibility checks, and remaining external
+acceptance evidence.
+
 ## Table of Contents
 **[Documentations](#documentations)**<br/>
 **[Quick Start](#quick-start)**<br/>
@@ -31,13 +38,29 @@ to check if Hermes is up and running.
 
 ## Development
 ### Compile
-1. Install [Apache Maven](http://maven.apache.org/install.html)
-2. Execute processes needed prior to actual project build.<br/>
-`mvn pre-clean`
-3. Compile Hermes and build JAR installer file.<br/>
-`mvn install`
+1. Install Java 27 and [Apache Maven](http://maven.apache.org/install.html).
+   Hermes is compiled with `--release 27`; Java 25 or older is not supported.
+2. Run the full regression suite.<br/>
+`mvn clean test`
+3. Build the distributable installer and ZIP packages.<br/>
+`mvn package -Dmaven.test.skip=true`
 4. Locate `hermes2_installer.jar` under the `target/` directory. Install Hermes 
 following the [installation guide](http://hermes.cecid.org/en/latest/installation.html).
+
+### Java 27 Loopback Check
+Run `scripts/verify-java27-loopback.sh` to build the Java 27 image against
+MySQL 8.4 and verify standard AS2 and ebMS payload loopbacks, duplicate and
+expired-message rejection, and a
+synchronous acknowledgement, retry exhaustion, and encrypted eBMS SMTP
+delivery plus POP collection and decryption in disposable containers.
+
+Run `scripts/verify-java27-mtls-loopback.sh` for the separate two-partner
+certificate-required TLS and signed-ebMS check.
+
+To validate a production database copy, pass schema-scoped MySQL dumps (made
+without `--databases`) as `HERMES_EBMS_DUMP=/path/ebms.sql` and
+`HERMES_AS2_DUMP=/path/as2.sql`. The script restores them only into a
+disposable MySQL 8.4 container before running the same gateway checks.
 
 ### Java API Documentations
 The Java API Documentations are available at

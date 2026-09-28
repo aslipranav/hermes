@@ -1,5 +1,16 @@
 H2O Release Notes
 ========================================
+Sep 28, 2026
+
+[Upgrades and improvements]
+- Rebuilt Hermes for Java 27 and Tomcat 9 with supported replacements for
+  obsolete SOAP, XML security, logging, mail, JDBC, and cryptography libraries.
+- Modernized SFRM TAR handling on Ant 1.10.11 and added Unicode archive and
+  path-traversal regression coverage.
+- The source release now includes the canonical Java 27 reactor, SFRM,
+  installer, deployment files, and loopback verifier so it can reproduce the
+  distributed artifacts.
+
 Sep 8, 2017
 
 [What is new]
@@ -357,4 +368,3 @@ Jun 01, 2007
 - Refactor / Updated IncomingMessageProcessor at processing acknowledgment module. It now updates the status of the order message corresponding to the ACK to final status (DF, PS,) and clear the message in the outbox queue.
 - Update Loopback test to use SAAJ model instead of AXIS and support JDK1.5.
 - Fix some javadoc comments
-

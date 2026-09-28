@@ -1,4 +1,4 @@
-FROM mysql:5.7
+FROM mysql:8.4
 MAINTAINER patrick.yee@gmail.com
 
 RUN mkdir -p /build

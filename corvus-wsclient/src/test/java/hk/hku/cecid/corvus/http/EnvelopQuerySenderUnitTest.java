@@ -12,6 +12,7 @@ package hk.hku.cecid.corvus.http;
 import java.io.File;
 import java.net.URL;
 import java.util.Iterator;
+import java.util.Base64;
 import java.util.Map;
 import java.util.StringTokenizer;
 
@@ -19,8 +20,6 @@ import junit.framework.TestCase;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import sun.misc.BASE64Decoder;
 
 import hk.hku.cecid.corvus.util.FileLogger;
 import hk.hku.cecid.corvus.ws.data.KVPairData;
@@ -185,7 +184,7 @@ public class EnvelopQuerySenderUnitTest extends TestCase
 		assertTrue	(authToken.length == 2);	
 		assertTrue	("Missing basic auth prefix 'Basic'", authToken[0].equalsIgnoreCase("Basic"));		
 		// #1 Decode the base64 authentication value to see whether it is "corvus:corvus".
-		String decodedCredential = new String(new BASE64Decoder().decodeBuffer(authToken[1]), "UTF-8");
+		String decodedCredential = new String(Base64.getDecoder().decode(authToken[1]), "UTF-8");
 		assertEquals("Invalid basic auth content", USER_NAME + ":" + PASSWORD, decodedCredential);
 		
 		// #2 Check content Type

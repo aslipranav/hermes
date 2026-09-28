@@ -172,8 +172,14 @@ public class FileRegionDataSource extends FileDataSource {
 
 		return bb;
 	}
-	
-	protected void finalize(){
+
+	/**
+	 * Retains the protected legacy cleanup hook for binary-compatible subclasses.
+	 */
+	@Override
+	@SuppressWarnings("removal")
+	protected void finalize() {
 		bb = null;
 	}
+
 }

@@ -177,37 +177,6 @@ public class CompositeKeyStore {
             catch (KeyStoreException e) {}
         }
         else if (ksp.getType().toUpperCase().equals("PKCS12")) {
-            /*
-            if (isUsingJSSE()) {
-                try {
-                    Class clsProv = Class.forName(
-                        "com.sun.net.ssl.internal.ssl.Provider");
-                    Constructor c = clsProv.getConstructor(null);
-                    Provider provider = (Provider) c.newInstance(null);
-                    if (Security.getProvider(provider.getName()) == null) {
-                        Security.addProvider(provider);
-                    }
-                }
-                catch (ClassNotFoundException e) {}
-                catch (NoSuchMethodException e) {}
-                catch (InstantiationException e) {}
-                catch (IllegalAccessException e) {}
-                catch (InvocationTargetException e) {}
-
-                try {
-                    ks = KeyStore.getInstance("PKCS12", "SunJSSE");
-                }
-                catch (NoSuchProviderException e) {}
-                catch (KeyStoreException e) {}
-            }
-            else {
-                try {
-                    ks = KeyStore.getInstance("PKCS12");
-                }
-                catch (KeyStoreException e) {}
-            }
-            */
-
             try {
                 Class clsProv = Class.forName(
                     "org.bouncycastle.jce.provider.BouncyCastleProvider");

@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.ArrayList;
 
 import java.lang.ClassLoader;
-import java.lang.reflect.Method;
 
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -43,9 +42,6 @@ public class FixtureStore
 		}
 	};
 	
-	// The set of class acting as the parameters for hacking the URLClassLoader.
-	private static final Class<?>[] clhackParams = new Class[]{URL.class};
-		
 	static
 	{
 		String basePath = System.getProperty("piazza.common.FIXTURE_BASE");
@@ -235,19 +231,22 @@ public class FixtureStore
 		{
 			return loader;
 		}
-		if (!(loader instanceof URLClassLoader))	// If it is not an instance of URLClassLoader, we can add url into it.
+		if (loader instanceof URLClassLoader)
 		{
-			return loader;
+			URLClassLoader urlLoader = (URLClassLoader)loader;
+			List<URL> urls = new ArrayList<URL>();
+			for (URL url : urlLoader.getURLs())
+				urls.add(url);
+			for (URL url : fixtureURL)
+				if (url != null)
+					urls.add(url);
+			return new URLClassLoader(urls.toArray(new URL[]{}), urlLoader.getParent());
 		}
-		
-		URLClassLoader urlLoader = (URLClassLoader)loader;
-		
-		Method method = URLClassLoader.class.getDeclaredMethod("addURL", clhackParams);
-		method.setAccessible(true);
-		for (URL u : fixtureURL)
-			method.invoke(urlLoader, new Object[]{ u });		
-		
-		return urlLoader;
+		List<URL> urls = new ArrayList<URL>();
+		for (URL url : fixtureURL)
+			if (url != null)
+				urls.add(url);
+		return urls.isEmpty() ? loader : new URLClassLoader(urls.toArray(new URL[]{}), loader);
 	}
 }
 

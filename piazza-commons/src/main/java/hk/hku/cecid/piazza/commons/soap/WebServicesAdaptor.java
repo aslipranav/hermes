@@ -317,7 +317,7 @@ public abstract class WebServicesAdaptor extends SOAPHttpAdaptor {
     
     protected SOAPElement[] getChildElementArray(SOAPElement element) {
     	ArrayList<SOAPElement> arrayList = new ArrayList<SOAPElement>();
-    	Iterator<SOAPElement> iter1 = element.getChildElements();
+	Iterator<?> iter1 = element.getChildElements();
 		while (iter1.hasNext()) {
             Node node = (Node)iter1.next();
 

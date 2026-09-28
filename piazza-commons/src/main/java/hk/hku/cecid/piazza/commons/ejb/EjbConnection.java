@@ -14,7 +14,7 @@ import javax.naming.InitialContext;
  * 
  * @author Hugo Y. K. Lam
  */
-public class EjbConnection {
+public class EjbConnection implements AutoCloseable {
 
     private boolean        connected, closed;
 
@@ -142,6 +142,7 @@ public class EjbConnection {
      *             connection or, the connection has not yet been connected or
      *             has been closed already.
      */
+    @Override
     public synchronized void close() throws EjbConnectionException {
         if (connected && !closed) {
             try {
@@ -164,10 +165,10 @@ public class EjbConnection {
     }
 
     /**
-     * Closes this connection in finalization.
-     * 
-     * @see java.lang.Object#finalize()
+     * Retains the protected legacy cleanup hook; callers should use close().
      */
+    @Override
+    @SuppressWarnings("removal")
     protected void finalize() throws Throwable {
         super.finalize();
         if (!closed) {
