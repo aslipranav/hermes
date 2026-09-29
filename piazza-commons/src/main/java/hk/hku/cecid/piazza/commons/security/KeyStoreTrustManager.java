@@ -2,16 +2,18 @@ package hk.hku.cecid.piazza.commons.security;
 
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.GeneralSecurityException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Enumeration;
 
 import javax.net.ssl.X509TrustManager;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 
 /**
  * This class implements the javax.net.ssl.X509TrustManager, which trusts a
- * Certificate Chain if any of the certificate in the certificate chain is
- * stored in the KeyStore.
+ * certificate chain only after PKIX validation against the stored trust anchors.
  *
  * @author Bob P. Y. Koon
  */
@@ -50,29 +52,27 @@ public class KeyStoreTrustManager extends KeyStoreComponent implements X509Trust
     }
     
     /**
-     * Checks if any certificate in the certificate chain is stored in the key store.
-     * 
-     * @param chain the certificate chain.
-     * @return true if any certificate in the certificate chain is stored in the key store.
+     * Creates a PKIX validator using the currently configured trust store.
      */
-    private boolean isChainTrusted(X509Certificate[] chain) {
+    private X509TrustManager getTrustManager() throws CertificateException {
         try {
-            for (int i = chain.length - 1; i >= 0; i-- ) {
-                if (keyStore.getCertificateAlias(chain[i]) != null) {
-                    return true;
+            TrustManagerFactory factory = TrustManagerFactory.getInstance("PKIX");
+            factory.init(keyStore);
+            for (TrustManager manager : factory.getTrustManagers()) {
+                if (manager instanceof X509TrustManager) {
+                    return (X509TrustManager) manager;
                 }
             }
-        } catch(KeyStoreException e) {
-            return false;
+        } catch (GeneralSecurityException e) {
+            throw new CertificateException("Cannot initialize PKIX trust manager", e);
         }
-        return false;
+        throw new CertificateException("No X509 trust manager is available");
     }
 
     /**
-     * Checks if any certificate in the certificate chain is stored in the key store.
+     * Checks the supplied chain and validity periods before PKIX validation.
      * 
      * @param chain the certificate chain.
-     * @return true if any certificate in the certificate chain is stored in the key store.
      * @throws IllegalArgumentException if null or zero-length chain is passed in 
      *          for the chain parameter or if null or zero-length string is passed in 
      *          for the authType parameter. 
@@ -83,14 +83,16 @@ public class KeyStoreTrustManager extends KeyStoreComponent implements X509Trust
         if (chain == null || chain.length == 0) {
             throw new IllegalArgumentException("Null or zero length chain");
         }
-        if (!isChainTrusted(chain)) {
-            throw new CertificateException("Certificate chain not trusted");
+        for (X509Certificate certificate : chain) {
+            if (certificate == null) {
+                throw new CertificateException("Null certificate in chain");
+            }
+            certificate.checkValidity();
         }
     }
 
     /**
-     * Checks if the client is trusted. It trusts the certificate chain if the embeded 
-     * key store contains one of the certificate in the chain.
+     * Validates a client's certificate chain against the configured trust anchors.
      * 
      * @param chain the peer certificate chain.
      * @param authType the key exchange algorithm used.
@@ -103,11 +105,11 @@ public class KeyStoreTrustManager extends KeyStoreComponent implements X509Trust
     public void checkClientTrusted(X509Certificate[] chain, String authType)
             throws CertificateException {
         checkTrusted(chain);
+        getTrustManager().checkClientTrusted(chain, authType);
     }
     
     /**
-     * Checks if the server is trusted. It trusts the certificate chain if the embeded 
-     * key store contains one of the certificate in the chain.
+     * Validates a server's certificate chain against the configured trust anchors.
      * 
      * @param chain the peer certificate chain.
      * @param authType the key exchange algorithm used.
@@ -120,6 +122,7 @@ public class KeyStoreTrustManager extends KeyStoreComponent implements X509Trust
     public void checkServerTrusted(X509Certificate[] chain, String authType)
             throws CertificateException {
         checkTrusted(chain);
+        getTrustManager().checkServerTrusted(chain, authType);
     }
 
     /**
@@ -129,7 +132,7 @@ public class KeyStoreTrustManager extends KeyStoreComponent implements X509Trust
      * @return a non-null (possibly empty) array of acceptable CA issuer certificates.
      */
     public X509Certificate[] getAcceptedIssuers() {
-        X509Certificate[] certs = null;
+        X509Certificate[] certs = new X509Certificate[0];
         try {
             // See how many certificates are in the keystore.
             int numberOfEntry = keyStore.size();
@@ -151,7 +154,7 @@ public class KeyStoreTrustManager extends KeyStoreComponent implements X509Trust
                 }
             }
         } catch(KeyStoreException e) {
-            certs = null;
+            certs = new X509Certificate[0];
         }
         return certs;
     }

@@ -14,6 +14,15 @@ import java.util.List;
 import org.junit.Assert;
 
 public class SFRMAcknowledgementParserTest extends TestCase {
+
+	public void testRejectsExternalEntities() throws Exception {
+		try {
+			new SFRMAcknowledgementParser("<!DOCTYPE messages [<!ENTITY x SYSTEM 'file:///not-read'>]><messages>&x;</messages>");
+			fail("Acknowledgements must reject DTDs before resolving entities");
+		} catch (org.dom4j.DocumentException expected) {
+			assertTrue(expected.getMessage().contains("DOCTYPE"));
+		}
+	}
 	
 	private ClassLoader FIXTURE_LOADER = FixtureStore.createFixtureLoader(false, this.getClass());
 	private String xmlContent;

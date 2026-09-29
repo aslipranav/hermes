@@ -235,7 +235,7 @@ public class AdminPageletAdaptor extends BorderLayoutPageletAdaptor {
         else if ("final".equalsIgnoreCase(action)) {
             System.gc();
             request.setAttribute(ATTR_MESSAGE,
-                    "Garbage collection initiated; finalization is unavailable on Java 25");
+                    "Garbage collection initiated; explicit finalization is unavailable on this Java runtime");
         }
                 
         PropertyTree dom = new PropertyTree();

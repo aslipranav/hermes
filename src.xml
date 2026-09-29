@@ -58,6 +58,8 @@
             <include>LICENSE.txt</include>
             <include>RELEASE-NOTES.txt</include>
             <include>MODERNIZATION.md</include>
+            <include>JAVA27-REVIEW.md</include>
+            <include>.dockerignore</include>
             <include>Vagrantfile</include>
             <include>bootstrap.sh</include>
             <include>deploy/**</include>

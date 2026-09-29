@@ -19,7 +19,12 @@ public class SFRMAcknowledgementParser {
 	}
 	
 	private void init() throws DocumentException{
-		SAXReader reader = new SAXReader();
+		SAXReader reader = SAXReader.createDefault();
+		try {
+			reader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+		} catch (org.xml.sax.SAXException e) {
+			throw new DocumentException("Cannot disable DTDs in acknowledgements", e);
+		}
 		StringReader strReader = new StringReader(xmlContent);
 		doc = reader.read(strReader);
 	}

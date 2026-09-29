@@ -1,0 +1,5 @@
+.git
+**/target
+.hermes-java27-*
+**/*.log
+.DS_Store

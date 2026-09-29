@@ -5,7 +5,7 @@ set -euo pipefail
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 port=${HERMES_E2E_PORT:-18080}
 mail_pop_port=${HERMES_E2E_MAIL_POP_PORT:-18110}
-database_image=${HERMES_E2E_DB_IMAGE:-mysql:8.4}
+database_image=${HERMES_E2E_DB_IMAGE:-hermes-java27-db:local}
 ebms_dump=${HERMES_EBMS_DUMP:-}
 as2_dump=${HERMES_AS2_DUMP:-}
 prefix="hermes-java27-e2e-$$"
@@ -38,7 +38,7 @@ trap cleanup EXIT
 
 wait_for_database() {
   for _ in {1..30}; do
-    if docker exec "$database" mysql -uroot -phermes-test-root -e 'SELECT 1' >/dev/null 2>&1; then
+    if docker exec "$database" mysql --protocol=TCP -h127.0.0.1 -uroot -phermes-test-root -e 'SELECT 1' >/dev/null 2>&1; then
       return
     fi
     sleep 1
@@ -70,6 +70,9 @@ wait_for_mail_server() {
 }
 
 cd "$repo_root"
+if [ -z "${HERMES_E2E_DB_IMAGE:-}" ]; then
+  docker build -q -f deploy/db/Dockerfile -t "$database_image" . >/dev/null
+fi
 if [ "${HERMES_E2E_SKIP_BUILD:-false}" != true ]; then
   docker build -q -f deploy/app_server/Dockerfile -t hermes-java27:local . >/dev/null
 fi
@@ -101,11 +104,14 @@ docker run -d --name "$database" --network "$network" --network-alias db \
   -e MYSQL_ROOT_PASSWORD=hermes-test-root ${database_image} >/dev/null
 wait_for_database
 
-docker exec "$database" mysql -uroot -phermes-test-root -e "CREATE DATABASE ebms; CREATE DATABASE as2; CREATE USER 'corvus'@'%' IDENTIFIED BY 'corvus'; GRANT ALL PRIVILEGES ON ebms.* TO 'corvus'@'%'; GRANT ALL PRIVILEGES ON as2.* TO 'corvus'@'%'; FLUSH PRIVILEGES;"
+if [ -n "${HERMES_E2E_DB_IMAGE:-}" ]; then
+  docker exec "$database" mysql -uroot -phermes-test-root -e "CREATE DATABASE ebms; CREATE DATABASE as2; CREATE USER 'corvus'@'%' IDENTIFIED BY 'corvus'; GRANT ALL PRIVILEGES ON ebms.* TO 'corvus'@'%'; GRANT ALL PRIVILEGES ON as2.* TO 'corvus'@'%';"
+fi
 if [ "$use_legacy_dumps" = true ]; then
+  docker exec "$database" mysql -uroot -phermes-test-root -e "DROP DATABASE ebms; DROP DATABASE as2; CREATE DATABASE ebms; CREATE DATABASE as2;"
   docker exec -i "$database" mysql -uroot -phermes-test-root ebms < "$ebms_dump"
   docker exec -i "$database" mysql -uroot -phermes-test-root as2 < "$as2_dump"
-else
+elif [ -n "${HERMES_E2E_DB_IMAGE:-}" ]; then
   docker exec -i "$database" mysql -uroot -phermes-test-root ebms < h2o-installer/sql/mysql_ebms.sql
   docker exec -i "$database" mysql -uroot -phermes-test-root as2 < h2o-installer/sql/mysql_as2.sql
 fi
@@ -115,8 +121,18 @@ docker run -d --name "$mail_server" --network "$network" --network-alias mail -p
   greenmail/standalone:2.1.13 >/dev/null
 wait_for_mail_server
 
-docker run -d --name "$application" --network "$network" -p "${port}:8080" hermes-java27:local >/dev/null
+docker run -d --name "$application" --network "$network" -p "127.0.0.1:${port}:8080" \
+  -e HERMES_WS_USERNAME=apiuser -e HERMES_WS_PASSWORD=corvus hermes-java27:local >/dev/null
 wait_for_gateway
+for protocol in ebms as2; do
+  for service in sender receiver receiver_list msg_history permitdl config; do
+    for suffix in '' '/'; do
+      status=$(/usr/bin/curl --silent --show-error --max-time 5 -o /dev/null -w '%{http_code}' \
+        "http://127.0.0.1:${port}/corvus/httpd/${protocol}/${service}${suffix}")
+      [ "$status" = 401 ]
+    done
+  done
+done
 for plugin in corvus-as2 corvus-as2-admin; do
   docker exec "$application" test -f "/hermes_home/plugins/${plugin}/plugin.xml"
 done

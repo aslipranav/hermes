@@ -40,6 +40,13 @@ Amazon Corretto 27 and runs it with Tomcat 9; this retains the required
 
 ## Current evidence
 
+The follow-up [Java 27 review](JAVA27-REVIEW.md) records P1-P4 findings and
+remediation. Business SOAP services now require authentication; optional signed
+receipt policies and certificate-chain validation are enforced. XML external
+entity expansion and unsafe SFRM delivery filenames are rejected. These security
+changes intentionally narrow unsafe legacy behavior; see the review for client
+migration and production acceptance requirements.
+
 - The unmodified upstream baseline at `be1870e76e21fb1abca50f19964d1c20626c54d8`
   passes `mvn clean test` under Corretto 8, and the modernized working tree
   passes the same full 19-module command under Corretto 27. This establishes

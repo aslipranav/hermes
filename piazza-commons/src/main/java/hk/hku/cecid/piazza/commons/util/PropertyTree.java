@@ -76,7 +76,7 @@ public class PropertyTree extends PersistentComponent implements PropertySheet {
             Transformer transformer = factory.newTransformer();
             ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
             transformer.transform(new DOMSource(node), new StreamResult(baos));
-            dom = new SAXReader().read(new ByteArrayInputStream(baos.toByteArray()));
+            dom = SAXReader.createDefault().read(new ByteArrayInputStream(baos.toByteArray()));
         }
         catch (Exception e) {
             throw new ComponentException("Unable to construct from the given node", e);
@@ -91,7 +91,7 @@ public class PropertyTree extends PersistentComponent implements PropertySheet {
      */
     public PropertyTree(InputStream ins) throws ComponentException {
         try {
-            dom = new SAXReader().read(ins);
+            dom = SAXReader.createDefault().read(ins);
         } catch (Exception e) {
             throw new ComponentException("Unable to read from input stream", e);
         }
@@ -325,7 +325,7 @@ public class PropertyTree extends PersistentComponent implements PropertySheet {
      * @see hk.hku.cecid.piazza.commons.module.PersistentComponent#loading(java.net.URL)
      */
     protected void loading(URL url) throws Exception {
-        SAXReader reader = new SAXReader();
+        SAXReader reader = SAXReader.createDefault();
         dom = reader.read(url);
     }
 

@@ -1062,7 +1062,7 @@ public class IncomingMessageHandler extends SFRMComponent {
 		// --------------------------------------------------------
 		// Step 2: Copy the received payload to the payload folder with the filename specified before
 		// --------------------------------------------------------
-		File outFile = new File(dir.getRoot(), filename);
+		File outFile = resolvePayloadFile(dir.getRoot(), filename);
 		FileUtils.moveFile(payload.getRoot(), outFile);
 		
 		// ------------------------------------------------------------------------		
@@ -1090,6 +1090,19 @@ public class IncomingMessageHandler extends SFRMComponent {
 		}
 		
 		return true;
+	}
+
+	static File resolvePayloadFile(File directory, String filename) throws IOException {
+		if (filename == null || filename.isEmpty() || filename.equals(".") || filename.equals("..")
+				|| filename.indexOf('/') >= 0 || filename.indexOf('\\') >= 0 || filename.indexOf(':') >= 0) {
+			throw new IOException("Payload filename must be a single file name");
+		}
+		File root = directory.getCanonicalFile();
+		File destination = new File(root, filename).getCanonicalFile();
+		if (!root.equals(destination.getParentFile())) {
+			throw new IOException("Payload filename escapes the destination directory");
+		}
+		return destination;
 	}
 	
 	/**
@@ -1176,5 +1189,4 @@ public class IncomingMessageHandler extends SFRMComponent {
            +  type);        							 
 	}
 }
-
 

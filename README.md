@@ -14,6 +14,8 @@ while preserving the existing Hermes AS2, ebMS, SFRM, installer, and database
 compatibility contracts. See [MODERNIZATION.md](MODERNIZATION.md) for the
 verified upgrade scope, compatibility checks, and remaining external
 acceptance evidence.
+The [Java 27 review and fix report](JAVA27-REVIEW.md) records security and
+compatibility findings, their fixes, and regression coverage.
 
 ## Table of Contents
 **[Documentations](#documentations)**<br/>
@@ -25,16 +27,25 @@ Full documentation is available at [hermes.cecid.org](http://hermes.cecid.org/).
 
 ## Quick Start
 ### Install Hermes with Docker
-1. Install the [Docker Engine](https://docs.docker.com/engine/installation/).
-2. Run the Docker container for Hermes database (MySQL).<br/>
-`docker run --name hermes_db -e MYSQL_ROOT_PASSWORD=corvus -d cecid/hermes_db:2.2`
-
-3. Run the Docker container for Hermes application server (Tomcat).<br/>
-`docker run --name hermes_app --link hermes_db:db -p 8080:8080 -d cecid/hermes_app:2.2`
-
-4. Log in to the Hermes administration console at
-`http://localhost:8080/corvus/admin/home` (username:`corvus`, password:`corvus`)
+1. Install Docker with the Compose plugin.
+2. From this checkout, build and start the Java 27 application and MySQL 8.4 database:<br/>
+`docker compose -f deploy/docker-compose.yml up --build -d`
+3. Log in to the Hermes administration console at
+`http://localhost:18080/corvus/admin/home` (username:`corvus`, password:`corvus`)
 to check if Hermes is up and running.
+
+This is a local development setup, bound to loopback only. The historical
+`cecid/hermes_app:2.2` image does **not** contain this Java 27 rebuild.
+Before exposing a deployment, replace the sample account passwords and signing
+keys, configure database secrets, and terminate HTTPS. Do not expose the sample
+credentials over plain HTTP.
+
+Business SOAP services (sender, receiver, receiver list, history, configuration,
+and redownload) require Basic authentication with a `user`, `api`, `admin`, or
+`corvus` role. Partner inbound/MDN routes retain their protocol authentication.
+For bundled command-line SOAP clients, set `HERMES_WS_USERNAME` and
+`HERMES_WS_PASSWORD`; Java callers can use `setBasicAuthentication` on each client.
+Credentials are scoped to that client, not a JVM-wide authenticator.
 
 ## Development
 ### Compile

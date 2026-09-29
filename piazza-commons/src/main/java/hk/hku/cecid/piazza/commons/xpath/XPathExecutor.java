@@ -102,7 +102,8 @@ public class XPathExecutor {
     }
 
     private XPath createXPath() {
-        XPath xpath = XPathFactory.newInstance().newXPath();
+        // Bundled Xalan only implements the older, explicitly typed XPath API.
+        XPath xpath = XPathFactory.newDefaultInstance().newXPath();
         xpath.setNamespaceContext(namespaceContext);
         xpath.setXPathFunctionResolver(functionsProvider);
         return xpath;

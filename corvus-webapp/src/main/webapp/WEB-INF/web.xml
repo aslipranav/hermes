@@ -108,6 +108,30 @@
 
   <security-constraint>
     <web-resource-collection>
+      <web-resource-name>Business message services</web-resource-name>
+      <url-pattern>/httpd/ebms/sender/*</url-pattern>
+      <url-pattern>/httpd/ebms/receiver_list/*</url-pattern>
+      <url-pattern>/httpd/ebms/receiver/*</url-pattern>
+      <url-pattern>/httpd/ebms/msg_history/*</url-pattern>
+      <url-pattern>/httpd/ebms/permitdl/*</url-pattern>
+      <url-pattern>/httpd/ebms/config/*</url-pattern>
+      <url-pattern>/httpd/as2/sender/*</url-pattern>
+      <url-pattern>/httpd/as2/receiver_list/*</url-pattern>
+      <url-pattern>/httpd/as2/receiver/*</url-pattern>
+      <url-pattern>/httpd/as2/msg_history/*</url-pattern>
+      <url-pattern>/httpd/as2/permitdl/*</url-pattern>
+      <url-pattern>/httpd/as2/config/*</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>user</role-name>
+      <role-name>api</role-name>
+      <role-name>admin</role-name>
+      <role-name>corvus</role-name>
+    </auth-constraint>
+  </security-constraint>
+
+  <security-constraint>
+    <web-resource-collection>
       <web-resource-name>Restricted API resources</web-resource-name>
       <description>No description</description>
       <url-pattern>/api/*</url-pattern>

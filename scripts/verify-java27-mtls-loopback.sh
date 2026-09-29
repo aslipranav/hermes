@@ -26,7 +26,7 @@ trap cleanup EXIT
 
 wait_for_database() {
   for _ in {1..30}; do
-    if docker exec "$database" mysql -uroot -phermes-test-root -e 'SELECT 1' >/dev/null 2>&1; then
+    if docker exec "$database" mysql --protocol=TCP -h127.0.0.1 -uroot -phermes-test-root -e 'SELECT 1' >/dev/null 2>&1; then
       return
     fi
     sleep 1
@@ -54,10 +54,12 @@ configure_partner() {
   local keystore="/tmp/${identity}.p12"
   local core_module=/usr/local/tomcat/webapps/corvus/WEB-INF/classes/hk/hku/cecid/piazza/corvus/core/conf/corvus.module.xml
   local ebms_module=/hermes_home/plugins/corvus-ebms/conf/hk/hku/cecid/ebms/spa/conf/ebms.module.xml
+  local as2_module=/hermes_home/plugins/corvus-as2/conf/hk/hku/cecid/edi/as2/conf/as2.module.core.xml
 
   docker cp "$temp_dir/${identity}.p12" "$application:${keystore}"
   docker exec "$application" sh -c "cp '${keystore}' /hermes_home/plugins/corvus-ebms/security/corvus.p12"
   docker exec "$application" sh -c "sed -i 's#jdbc:mysql://db/ebms#jdbc:mysql://db/ebms_${schema_suffix}#' '${ebms_module}'"
+  docker exec "$application" sh -c "sed -i 's#jdbc:mysql://db/as2#jdbc:mysql://db/as2_${schema_suffix}#' '${as2_module}'"
   docker exec "$application" sh -c "sed -i 's#<parameter name=\"key-alias\" value=\"corvus\" />#<parameter name=\"key-alias\" value=\"partner-${identity}\" />#g' '${ebms_module}'"
   docker exec "$application" perl -0pi -e 's{<!-- Set up a SSL Trust Manager for SSL connection\s*(<component id="ssl-trust-manager".*?</component>)\s*-->}{$1}s; s{<!-- Set up a SSL Key Manager for SSL connection, it is configured in application server most case \(e\.g\. Tomcat server\.xml\)\s*(<component id="ssl-key-manager".*?</component>)\s*-->}{$1}s' "$core_module"
   docker exec "$application" sh -c "sed -i -e 's#/j2sdk1.4.2_04/jre/lib/security/cacerts#${keystore}#' -e 's#hk/hku/cecid/piazza/corvus/core/certs/cert.p12#${keystore}#' -e 's#value=\"changeit\"#value=\"${keystore_password}\"#' -e 's#value=\"mykey\"#value=\"partner-${identity}\"#' '${core_module}'"
@@ -127,8 +129,10 @@ docker exec "$database" mysql -uroot -phermes-test-root -e "CREATE DATABASE ebms
 for schema in ebms_c ebms_d; do docker exec -i "$database" mysql -uroot -phermes-test-root "$schema" < h2o-installer/sql/mysql_ebms.sql; done
 for schema in as2_c as2_d; do docker exec -i "$database" mysql -uroot -phermes-test-root "$schema" < h2o-installer/sql/mysql_as2.sql; done
 
-docker run -d --name "$partner_c" --network "$network" --network-alias c -p "${port_c}:8080" -p "${tls_port_c}:8443" hermes-java27:local >/dev/null
-docker run -d --name "$partner_d" --network "$network" --network-alias d -p "${port_d}:8080" -p "${tls_port_d}:8443" hermes-java27:local >/dev/null
+docker run -d --name "$partner_c" --network "$network" --network-alias c -p "127.0.0.1:${port_c}:8080" -p "127.0.0.1:${tls_port_c}:8443" \
+  -e HERMES_WS_USERNAME=apiuser -e HERMES_WS_PASSWORD=corvus hermes-java27:local >/dev/null
+docker run -d --name "$partner_d" --network "$network" --network-alias d -p "127.0.0.1:${port_d}:8080" -p "127.0.0.1:${tls_port_d}:8443" \
+  -e HERMES_WS_USERNAME=apiuser -e HERMES_WS_PASSWORD=corvus hermes-java27:local >/dev/null
 wait_for_gateway "$port_c"
 wait_for_gateway "$port_d"
 configure_partner "$partner_c" c c 8443
@@ -172,4 +176,19 @@ docker exec "$partner_c" grep -q "Signature verification success: ${c_ack_id}" /
 docker exec "$partner_d" grep -q "Signature verification success: ${d_ack_id}" /hermes_home/logs/ebms.log
 docker exec "$partner_c" grep -q "Reliable message (${c_message_id}) - acknowledgement received" /hermes_home/logs/ebms.log
 docker exec "$partner_d" grep -q "Reliable message (${d_message_id}) - acknowledgement received" /hermes_home/logs/ebms.log
+
+# A receipt with its signature removed must not be accepted for a signed-ACK request.
+docker exec "$database" mysql -uroot -phermes-test-root ebms_c -e "SELECT content INTO DUMPFILE '/var/lib/mysql-files/review-ack.bin' FROM repository WHERE message_id = '${c_ack_id}' AND message_box = 'inbox'"
+docker cp "$database:/var/lib/mysql-files/review-ack.bin" "$temp_dir/unsigned-ack.bin"
+bad_ack_id="unsigned-${c_ack_id}"
+BAD_ACK_ID="$bad_ack_id" perl -0pi -e '
+  s{<ds:Signature\b.*?</ds:Signature>}{}s or die "missing signature";
+  s{<eb:MessageId>[^<]+</eb:MessageId>}{"<eb:MessageId>$ENV{BAD_ACK_ID}</eb:MessageId>"}e or die "missing message ID";
+' "$temp_dir/unsigned-ack.bin"
+ack_type=$(docker exec "$database" mysql -N -B -ucorvus -pcorvus ebms_c -e "SELECT content_type FROM repository WHERE message_id = '${c_ack_id}' AND message_box = 'inbox'")
+/usr/bin/curl --fail --silent --show-error --max-time 20 -H "Content-Type: ${ack_type}" -H 'SOAPAction: ""' \
+  --data-binary @"$temp_dir/unsigned-ack.bin" "http://127.0.0.1:${port_c}/corvus/httpd/ebms/inbound" > "$temp_dir/unsigned-ack-response"
+bad_ack_type=$(docker exec "$database" mysql -N -B -ucorvus -pcorvus ebms_c -e "SELECT message_type FROM message WHERE message_id = '${bad_ack_id}' AND message_box = 'inbox'")
+[ "$bad_ack_type" = ProcessedError ]
+docker exec "$partner_c" grep -q 'requires a signed acknowledgement' /hermes_home/logs/ebms.log
 printf 'Java 27 two-party mTLS signed ebMS passed: %s %s\n' "$c_message_id" "$d_message_id"

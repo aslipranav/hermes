@@ -153,6 +153,14 @@ public abstract class SOAPSender extends Component implements Runnable {
 	public SOAPSender(FileLogger l, Data d){
 		this.log 		= l;		
 		this.properties	= d;
+		String username = System.getenv("HERMES_WS_USERNAME");
+		String password = System.getenv("HERMES_WS_PASSWORD");
+		if (username != null || password != null) {
+			if (username == null || password == null) {
+				throw new IllegalArgumentException("Both HERMES_WS_USERNAME and HERMES_WS_PASSWORD are required");
+			}
+			setBasicAuthentication(username, password);
+		}
 		try{
 			this.request = MessageFactory.newInstance().createMessage();
 		}catch(SOAPException se){
@@ -384,8 +392,14 @@ public abstract class SOAPSender extends Component implements Runnable {
 	 * @param password
 	 * 			The password for basic authentication. 			
 	 */
+	private String authorization;
+
 	public void setBasicAuthentication(final String username, final String password){
-		Authenticator.setDefault(new SOAPAuthenticator(username, password));
+		if (username == null || password == null || username.indexOf(':') >= 0) {
+			throw new IllegalArgumentException("Valid Basic authentication credentials are required");
+		}
+		authorization = "Basic " + java.util.Base64.getEncoder().encodeToString(
+				(username + ":" + password).getBytes(java.nio.charset.StandardCharsets.UTF_8));
 	}
 
 	/**
@@ -638,6 +652,9 @@ public abstract class SOAPSender extends Component implements Runnable {
 				SOAPConnection soapConn  = factory.createConnection();
 					 
 				this.onBeforeRequest(soapConn, request);
+				if (authorization != null) {
+					request.getMimeHeaders().setHeader("Authorization", authorization);
+				}
 					
 				// Save the request if the developers modify the request
 				// at somewhere.

@@ -79,12 +79,15 @@ public class HttpDispatcher extends HttpServlet {
 
         try {
             Class<?> clazz = Class.forName("com.mysql.cj.jdbc.AbandonedConnectionCleanupThread");
-            Method method = (clazz == null ? null : clazz.getMethod("shutdown"));
-            if (method != null) {
-                method.invoke(null);
-            }
+            Method method = clazz.getMethod("checkedShutdown");
+            method.invoke(null);
         }
-        catch (Throwable t) {}
+        catch (ClassNotFoundException e) {
+            // MySQL is optional; other database installations have no cleanup thread.
+        }
+        catch (ReflectiveOperationException e) {
+            Sys.main.log.error("Unable to stop MySQL connection cleanup thread", e);
+        }
 
         dispatcherContext.unregisterAll();
         Sys.main.log.info(servletConfig.getServletName()

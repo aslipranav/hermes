@@ -1548,6 +1548,17 @@ public class InboundMessageProcessor {
             boolean hasSignature = soapEnvelope.getHeader().getChildElements(
                     signatureName).hasNext();
 
+            if (ebxmlRequestMessage.getAcknowledgment() != null) {
+                MessageDAO dao = (MessageDAO) EbmsProcessor.core.dao.createDAO(MessageDAO.class);
+                MessageDVO original = (MessageDVO) dao.createDVO();
+                original.setMessageId(ebxmlRequestMessage.getAcknowledgment().getRefToMessageId());
+                original.setMessageBox(MessageClassifier.MESSAGE_BOX_OUTBOX);
+                if (!dao.findMessage(original)) {
+                    throw new MessageServiceHandlerException("Acknowledgement references an unknown outgoing message");
+                }
+                validateAcknowledgement(ebxmlRequestMessage, original, hasSignature);
+            }
+
             // if it has signature, verify it
             if (!hasSignature) {
                 return true;
@@ -1570,6 +1581,20 @@ public class InboundMessageProcessor {
         } catch (Throwable e) {
             EbmsProcessor.core.log.error("Error in verifying signature", e);
             return false;
+        }
+    }
+
+    static void validateAcknowledgement(EbxmlMessage acknowledgement, MessageDVO original,
+            boolean hasSignature) throws MessageServiceHandlerException {
+        String reference = acknowledgement.getAcknowledgment().getRefToMessageId();
+        String headerReference = acknowledgement.getMessageHeader().getRefToMessageId();
+        if (!original.getMessageId().equals(reference)
+                || (headerReference != null && !headerReference.equals(reference))
+                || !original.getCpaId().equals(acknowledgement.getCpaId())) {
+            throw new MessageServiceHandlerException("Acknowledgement does not match the outgoing message");
+        }
+        if (Boolean.parseBoolean(original.getAckSignRequested()) && !hasSignature) {
+            throw new MessageServiceHandlerException("The outgoing message requires a signed acknowledgement");
         }
     }
 
